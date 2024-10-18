@@ -37,10 +37,3 @@ void loop() {
 
   delay(1000); // Wait for a second before sending another message
 }
-
-
-
-  msgCounter++; // Increment the message counter
-
-  delay(1000); // Send one message per second
-}
