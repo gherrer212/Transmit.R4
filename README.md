@@ -1,45 +1,44 @@
 /*
-  CAN Bus Transmitter
-  This code sends CAN messages from Arduino R4 Minima
+  CANWrite
+
+  Write and send CAN Bus messages from Arduino R4 Minima
+
+  See the full documentation here:
+  https://docs.arduino.cc/tutorials/uno-r4-wifi/can
 */
 
-#include <Arduino_CAN.h>
-
-const uint32_t CAN_ID = 0x123;  // Arbitrary CAN ID for messages
-uint32_t msgCounter = 0;
+#include <CAN.h> // Include the CAN library for Arduino R4 Minima
 
 void setup() {
+  // Start Serial Monitor for debugging
   Serial.begin(115200);
   while (!Serial) {}
 
-  // Initialize CAN bus at 250 kbps
-  if (!CAN.begin(CanBitRate::BR_250k)) {
-    Serial.println("CAN initialization failed.");
-    while (true);
+  // Initialize CAN bus at 500 kbps
+  if (!CAN.begin(500E3)) {
+    Serial.println("Starting CAN failed!");
+    while (1);
   }
 
-  Serial.println("CAN Transmitter Ready");
+  Serial.println("CAN bus ready");
 }
 
 void loop() {
-  // Prepare CAN message with a simple counter
-  uint8_t msg_data[8];
-  msg_data[0] = 0xCA;
-  msg_data[1] = 0xFE;
-  msg_data[2] = 0xBE;
-  msg_data[3] = 0xEF;
-  memcpy(&msg_data[4], &msgCounter, sizeof(msgCounter)); // Last 4 bytes are the counter
+  // Start a new message
+  CAN.beginPacket(0x123); // Send to ID 0x123
+  CAN.write('H');
+  CAN.write('e');
+  CAN.write('l');
+  CAN.write('l');
+  CAN.write('o');
+  CAN.endPacket(); // End the packet, and send the message
+  
+  Serial.println("Message sent: Hello");
 
-  // Create CAN message
-  CanMsg message(CanStandardId(CAN_ID), sizeof(msg_data), msg_data);
+  delay(1000); // Wait for a second before sending another message
+}
 
-  // Send the CAN message
-  if (CAN.write(message) == -1) {
-    Serial.println("Error: CAN message not sent");
-  } else {
-    Serial.print("Message sent with counter: ");
-    Serial.println(msgCounter);
-  }
+
 
   msgCounter++; // Increment the message counter
 
