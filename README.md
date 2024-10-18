@@ -1,48 +1,47 @@
 /*
-  CANWrite
-
-  Write and send CAN Bus messages
-
-  Reference: https://docs.arduino.cc/tutorials/uno-r4-wifi/can
+  CAN Bus Transmitter
+  This code sends CAN messages from Arduino R4 Minima
 */
 
 #include <Arduino_CAN.h>
 
-static uint32_t const CAN_ID = 0x20;
+const uint32_t CAN_ID = 0x123;  // Arbitrary CAN ID for messages
+uint32_t msgCounter = 0;
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) { }
+  while (!Serial) {}
 
+  // Initialize CAN bus at 250 kbps
   if (!CAN.begin(CanBitRate::BR_250k)) {
-    Serial.println("CAN.begin(...) failed.");
-    for (;;) {}
+    Serial.println("CAN initialization failed.");
+    while (true);
   }
-}
 
-static uint32_t msg_cnt = 0;
+  Serial.println("CAN Transmitter Ready");
+}
 
 void loop() {
-  /* Assemble a CAN message with the format of
-   * 0xCA 0xFE 0x00 0x00 [4 byte message counter]
-   */
-  uint8_t const msg_data[] = {0xCA, 0xFE, 0, 0, 0, 0, 0, 0};
-  memcpy((void *)(msg_data + 4), &msg_cnt, sizeof(msg_cnt));
-  CanMsg const msg(CanStandardId(CAN_ID), sizeof(msg_data), msg_data);
+  // Prepare CAN message with a simple counter
+  uint8_t msg_data[8];
+  msg_data[0] = 0xCA;
+  msg_data[1] = 0xFE;
+  msg_data[2] = 0xBE;
+  msg_data[3] = 0xEF;
+  memcpy(&msg_data[4], &msgCounter, sizeof(msgCounter)); // Last 4 bytes are the counter
 
-  /* Transmit the CAN message, capture and display an
-   * error code in case of failure.
-   */
-  if (int const rc = CAN.write(msg); rc < 0) {
-    Serial.print("CAN.write(...) failed with error code ");
-    Serial.println(rc);
-    for (;;) {}
+  // Create CAN message
+  CanMsg message(CanStandardId(CAN_ID), sizeof(msg_data), msg_data);
+
+  // Send the CAN message
+  if (CAN.write(message) == -1) {
+    Serial.println("Error: CAN message not sent");
+  } else {
+    Serial.print("Message sent with counter: ");
+    Serial.println(msgCounter);
   }
 
-  /* Increase the message counter. */
-  msg_cnt++;
+  msgCounter++; // Increment the message counter
 
-  /* Only send one message per second. */
-  delay(1000);
+  delay(1000); // Send one message per second
 }
-
